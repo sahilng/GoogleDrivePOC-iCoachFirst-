@@ -69,7 +69,6 @@ func saveToken(path string, token *oauth2.Token) {
 
 
 
-
 //only touch this function = above is OAuth
 
 func main() {
@@ -95,23 +94,31 @@ func main() {
 
 
 //begin iCoachFirst stuff
+fmt.Println("Welcome to the Google Drive iCoachFirst POC!")
+fmt.Println()
+fmt.Println("Sample 1: Retrieving Google Files")
 	//sample (get files and list all)
-        r, err := srv.Files.List().PageSize(10).
+	r, err := srv.Files.List().PageSize(10).
                 Fields("nextPageToken, files(id, name)").Do()
         if err != nil {
                 log.Fatalf("Unable to retrieve files: %v", err)
         }
-        fmt.Println("Files:")
+
         if len(r.Files) == 0 {
                 fmt.Println("No files found.")
         } else {
-                for _, i := range r.Files {
+	fmt.Println("\n" + "List of Google Files: ") 
+	       for _, i := range r.Files {
                         fmt.Printf("%s (%s)\n", i.Name, i.Id)
                 }
+	fmt.Println()
         }
 
 //Sahil added these
+
+fmt.Println("Sample 2: Downloading Google Files")
 	//sample (download Google Doc)
+
 	fileId := "1p3G8Cty3WXkx1I17t29vMGOPh-1Im9_YsWpoQ06INeo" //replace with appropriate fileId
 	mimeType := "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 	res, err := srv.Files.Export(
@@ -125,15 +132,45 @@ func main() {
   	out,_ := os.Create(fileId + ".docx")
   	defer out.Close()
   	io.Copy(out, res.Body)
+	fmt.Println("\nSuccessfully downloaded " + fileId + "\n")
 
-
-
+fmt.Println("Sample 3: Uploading Google Files")
 	//sample (save text file)
+	var newFile drive.File
+	newFile.Name = "new file test"
+	newFile.MimeType = "application/vnd.google-apps.document"
 	
+	response, error := srv.Files.Create(
+		&newFile).
+		Fields("id").
+	Do()
+	
+	if error != nil {
+		log.Fatalf("Error: %v", error)
+	} else {
+		fmt.Println("\nSuccessfully uploaded file with id = " + response.Id + "\n")
+	}
 
+//fmt.Println("Sample 4: Setting Google Tags")
 	//sample (set a tag)
+	//can  be   done   behind the scenes   or here using https://developers.google.com/drive/api/v3/file -> Add Custom File Properties
+	//Set key-value pair "tag" -> array of stringvalues
 
-
+fmt.Println("Sample A: Sharing Google Files")
 	//sample (share file externally)
+	//	fileId := chosen file id 
+	var addedPermissions drive.Permission
+	addedPermissions.Type = "user"
+	addedPermissions.Role = "writer"
+	addedPermissions.EmailAddress = "sahilng1997@gmail.com"	
+	_, perr := srv.Permissions.Create(
+		fileId,
+		&addedPermissions,).
+	Do()	
+	if perr != nil {
+		log.Fatalf("Error: %v", perr)
+	} else {
+		fmt.Println("Successfully changed the permissions of " + fileId)
+	}
 }
 
