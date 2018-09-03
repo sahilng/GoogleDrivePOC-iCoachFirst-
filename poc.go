@@ -3,8 +3,9 @@ package main
 import (
         "encoding/json"
         "fmt"
+        "io"
         "io/ioutil"
-        "log"
+	"log"
         "net/http"
         "os"
 
@@ -66,14 +67,21 @@ func saveToken(path string, token *oauth2.Token) {
         json.NewEncoder(f).Encode(token)
 }
 
+
+
+
+//only touch this function = above is OAuth
+
 func main() {
+
+//Authorization
         b, err := ioutil.ReadFile("credentials.json")
         if err != nil {
                 log.Fatalf("Unable to read client secret file: %v", err)
         }
 
         // If modifying these scopes, delete your previously saved token.json.
-        config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+        config, err := google.ConfigFromJSON(b, drive.DriveScope)
         if err != nil {
                 log.Fatalf("Unable to parse client secret file to config: %v", err)
         }
@@ -84,6 +92,10 @@ func main() {
                 log.Fatalf("Unable to retrieve Drive client: %v", err)
         }
 
+
+
+//begin iCoachFirst stuff
+	//sample (get files and list all)
         r, err := srv.Files.List().PageSize(10).
                 Fields("nextPageToken, files(id, name)").Do()
         if err != nil {
@@ -97,5 +109,31 @@ func main() {
                         fmt.Printf("%s (%s)\n", i.Name, i.Id)
                 }
         }
+
+//Sahil added these
+	//sample (download Google Doc)
+	fileId := "1p3G8Cty3WXkx1I17t29vMGOPh-1Im9_YsWpoQ06INeo" //replace with appropriate fileId
+	mimeType := "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	res, err := srv.Files.Export(
+		fileId,
+		mimeType,
+	).Download()
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	defer res.Body.Close()
+  	out,_ := os.Create(fileId + ".docx")
+  	defer out.Close()
+  	io.Copy(out, res.Body)
+
+
+
+	//sample (save text file)
+	
+
+	//sample (set a tag)
+
+
+	//sample (share file externally)
 }
 
